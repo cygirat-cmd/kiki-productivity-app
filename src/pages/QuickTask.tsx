@@ -13,6 +13,9 @@ interface TaskTimer {
   startTime: number | null;
   isRunning: boolean;
   timeElapsed: number;
+  pauseUsed: boolean;
+  pauseTimeUsed: number; // in seconds
+  wasPaused: boolean;
 }
 
 const QuickTask = () => {
@@ -20,6 +23,8 @@ const QuickTask = () => {
   const [duration, setDuration] = useState(25); // Default pomodoro
   const [timer, setTimer] = useState<TaskTimer | null>(null);
   const [showValidation, setShowValidation] = useState(false);
+  const [abortHolding, setAbortHolding] = useState(false);
+  const [abortProgress, setAbortProgress] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -63,7 +68,10 @@ const QuickTask = () => {
       duration,
       startTime: Date.now(),
       isRunning: true,
-      timeElapsed: 0
+      timeElapsed: 0,
+      pauseUsed: false,
+      pauseTimeUsed: 0,
+      wasPaused: false
     };
     
     setTimer(newTimer);
@@ -73,8 +81,37 @@ const QuickTask = () => {
     });
   };
 
+  const canPause = () => {
+    if (!timer) return false;
+    if (timer.duration < 15) return false; // No pause for sessions under 15 minutes
+    if (timer.pauseUsed) return false;
+    if (timer.timeElapsed < 300) return false; // First 5 minutes
+    if (timer.timeElapsed > (timer.duration * 60 - 300)) return false; // Last 5 minutes
+    return true;
+  };
+
   const pauseTimer = () => {
-    setTimer(prev => prev ? { ...prev, isRunning: false } : null);
+    if (!canPause()) {
+      toast({
+        title: "Cannot pause now",
+        description: "Pausing is not allowed in the first/last 5 minutes or for short sessions",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setTimer(prev => prev ? { 
+      ...prev, 
+      isRunning: false, 
+      pauseUsed: true,
+      wasPaused: true 
+    } : null);
+    
+    toast({
+      title: "Timer paused",
+      description: "You have max 3 minutes. Kiki's trust is slightly damaged...",
+      variant: "destructive"
+    });
   };
 
   const resumeTimer = () => {
@@ -93,21 +130,75 @@ const QuickTask = () => {
     setTimer(null);
     setShowValidation(false);
     setTask("");
+    setAbortHolding(false);
+    setAbortProgress(0);
+  };
+
+  const handleAbortStart = () => {
+    setAbortHolding(true);
+    setAbortProgress(0);
+    
+    const interval = setInterval(() => {
+      setAbortProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          handleAbortComplete();
+          return 100;
+        }
+        return prev + 5; // 2 second hold time
+      });
+    }, 100);
+
+    // Clear interval if user releases
+    const cleanup = () => {
+      clearInterval(interval);
+      setAbortHolding(false);
+      setAbortProgress(0);
+    };
+
+    // Add event listeners for mouse/touch end
+    document.addEventListener('mouseup', cleanup, { once: true });
+    document.addEventListener('touchend', cleanup, { once: true });
+  };
+
+  const handleAbortComplete = () => {
+    // Check for pet life insurance
+    const hasInsurance = localStorage.getItem("kiki-insurance") === "true";
+    
+    if (hasInsurance) {
+      toast({
+        title: "Pet Life Insurance activated!",
+        description: "Kiki was saved by your insurance policy",
+      });
+      localStorage.setItem("kiki-insurance", "false"); // Use up insurance
+      stopTimer();
+      navigate("/home");
+    } else {
+      navigate("/death", { state: { reason: "Mission aborted - Kiki couldn't handle the pressure" } });
+    }
   };
 
   const handleTaskComplete = () => {
-    // Update pet happiness and streak
+    // Update pet happiness and streak with pause penalties
     const savedPet = localStorage.getItem("kiki-pet");
     if (savedPet) {
       const pet = JSON.parse(savedPet);
-      pet.happiness = Math.min(100, pet.happiness + 15);
+      const baseReward = timer?.wasPaused ? 10 : 15; // Reduced reward if paused
+      const trustPenalty = timer?.wasPaused ? 5 : 0;
+      
+      pet.happiness = Math.min(100, pet.happiness + baseReward);
+      pet.trust = Math.max(0, (pet.trust || 100) - trustPenalty);
       pet.streak += 1;
       localStorage.setItem("kiki-pet", JSON.stringify(pet));
     }
 
+    const message = timer?.wasPaused 
+      ? "Task completed, but Kiki noticed the pause... +10 happiness, -5 trust"
+      : "Task completed! 🎉 Kiki is so proud of you! +15 happiness points!";
+
     toast({
-      title: "Task completed! 🎉",
-      description: "Kiki is so proud of you! +15 happiness points!",
+      title: timer?.wasPaused ? "Task completed... barely" : "Task completed! 🎉",
+      description: message,
     });
 
     stopTimer();
@@ -127,6 +218,13 @@ const QuickTask = () => {
   const getProgress = () => {
     if (!timer) return 0;
     return (timer.timeElapsed / (timer.duration * 60)) * 100;
+  };
+
+  const isInNoPauseZone = () => {
+    if (!timer) return false;
+    const elapsed = timer.timeElapsed;
+    const total = timer.duration * 60;
+    return elapsed < 300 || elapsed > (total - 300); // First or last 5 minutes
   };
 
   return (
@@ -202,18 +300,31 @@ const QuickTask = () => {
                   {formatTime(timer.duration * 60 - timer.timeElapsed)}
                 </div>
                 
-                <Progress value={getProgress()} className="w-full h-4" />
+                <div className="relative">
+                  <Progress value={getProgress()} className="w-full h-4" />
+                  {isInNoPauseZone() && (
+                    <div className="absolute inset-0 bg-red-500/20 rounded-full flex items-center justify-center">
+                      <span className="text-xs text-red-600 font-bold">NO PAUSE ZONE</span>
+                    </div>
+                  )}
+                </div>
                 
                 <p className="text-sm text-muted-foreground">
                   {Math.floor(getProgress())}% complete
+                  {timer?.wasPaused && <span className="text-destructive ml-2">(Paused - Trust damaged)</span>}
                 </p>
               </div>
 
               <div className="flex justify-center space-x-3">
                 {timer.isRunning ? (
-                  <Button onClick={pauseTimer} className="btn-kawaii">
+                  <Button 
+                    onClick={pauseTimer} 
+                    className="btn-kawaii" 
+                    disabled={!canPause()}
+                    title={!canPause() ? "Cannot pause now" : "Pause timer (once only, max 3 min)"}
+                  >
                     <Pause className="w-5 h-5 mr-2" />
-                    Pause
+                    Pause {timer.pauseUsed ? "(Used)" : ""}
                   </Button>
                 ) : (
                   <Button onClick={resumeTimer} className="btn-kawaii">
@@ -222,9 +333,24 @@ const QuickTask = () => {
                   </Button>
                 )}
                 
-                <Button onClick={stopTimer} variant="destructive">
-                  <Square className="w-5 h-5 mr-2" />
-                  Stop
+                <Button
+                  onMouseDown={handleAbortStart}
+                  onTouchStart={handleAbortStart}
+                  className="relative bg-destructive hover:bg-destructive/90 text-destructive-foreground min-w-[120px]"
+                  disabled={abortHolding}
+                >
+                  {abortHolding ? (
+                    <>
+                      <div className="absolute inset-0 bg-death-red/20 rounded" 
+                           style={{ width: `${abortProgress}%` }} />
+                      <span className="relative z-10">Aborting... {Math.floor(abortProgress)}%</span>
+                    </>
+                  ) : (
+                    <>
+                      <Square className="w-5 h-5 mr-2" />
+                      Hold to Abort
+                    </>
+                  )}
                 </Button>
               </div>
             </Card>
@@ -245,24 +371,27 @@ const QuickTask = () => {
               
               <div className="bg-warning/20 rounded-lg p-4">
                 <p className="text-sm text-warning-foreground">
-                  ⚠️ Choose your proof method. Lying will result in... consequences.
+                  ⚠️ {timer?.wasPaused 
+                    ? "You paused during this task. Extra proof required! Lying will result in... consequences."
+                    : "Choose your proof method. Lying will result in... consequences."
+                  }
                 </p>
               </div>
 
               <div className="space-y-3">
                 <Button className="btn-success w-full h-12">
                   <Camera className="w-5 h-5 mr-2" />
-                  Take Photo Proof
+                  Take Photo Proof {timer?.wasPaused && "(Required)"}
                 </Button>
                 
                 <Button className="btn-success w-full h-12">
                   <MessageSquare className="w-5 h-5 mr-2" />
-                  Answer Quiz Questions
+                  Answer Quiz Questions {timer?.wasPaused && "(Extended)"}
                 </Button>
                 
                 <Button className="btn-success w-full h-12">
                   <UserCheck className="w-5 h-5 mr-2" />
-                  Send to Friend for Approval
+                  Send to Friend for Approval {timer?.wasPaused && "(Required)"}
                 </Button>
               </div>
 
