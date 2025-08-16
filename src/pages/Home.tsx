@@ -12,8 +12,8 @@ interface Pet {
   type: string;
   name: string;
   adoptedAt: string;
-  happiness: number;
   streak: number;
+  trust?: number;
 }
 
 const petImages = {
@@ -93,28 +93,12 @@ const Home = () => {
               alt={pet.name} 
               className="w-40 h-40 mx-auto object-contain bounce-cute"
             />
-            {pet.happiness < 30 && (
-              <div className="absolute top-0 right-0 animate-pulse">
-                <span className="text-2xl">😰</span>
-              </div>
-            )}
           </div>
 
-          <div className="space-y-2">
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">Happiness Level</p>
-              <Progress 
-                value={pet.happiness} 
-                className="w-full h-3 mt-1"
-              />
-              <p className="text-xs text-muted-foreground mt-1">{pet.happiness}%</p>
-            </div>
-
-            <div className="bg-muted/50 rounded-lg p-3 min-h-[3rem] flex items-center justify-center">
-              <p className="text-sm italic text-center">
-                "{unhingedQuotes[currentQuote]}"
-              </p>
-            </div>
+          <div className="bg-muted/50 rounded-lg p-3 min-h-[3rem] flex items-center justify-center">
+            <p className="text-sm italic text-center">
+              "{unhingedQuotes[currentQuote]}"
+            </p>
           </div>
         </div>
 
@@ -155,22 +139,6 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Warning */}
-        {pet.happiness < 50 && (
-          <div className="bg-warning/20 border border-warning/30 rounded-lg p-4 text-center">
-            <p className="text-sm font-medium text-warning-foreground">
-              ⚠️ {pet.name} is getting anxious! Complete some tasks to boost their mood!
-            </p>
-          </div>
-        )}
-
-        {pet.happiness < 20 && (
-          <div className="bg-destructive/20 border border-destructive/30 rounded-lg p-4 text-center">
-            <p className="text-sm font-bold text-destructive-foreground">
-              💀 CRITICAL: {pet.name} is on the verge of... well, you know what happens next!
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );

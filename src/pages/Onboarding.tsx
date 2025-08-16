@@ -31,8 +31,8 @@ const Onboarding = () => {
       type: selectedPet,
       name: petName,
       adoptedAt: new Date().toISOString(),
-      happiness: 100,
-      streak: 0
+      streak: 0,
+      trust: 100
     }));
     navigate("/home");
   };

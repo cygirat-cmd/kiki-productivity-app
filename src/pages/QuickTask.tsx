@@ -179,22 +179,20 @@ const QuickTask = () => {
   };
 
   const handleTaskComplete = () => {
-    // Update pet happiness and streak with pause penalties
+    // Update pet streak and trust with pause penalties
     const savedPet = localStorage.getItem("kiki-pet");
     if (savedPet) {
       const pet = JSON.parse(savedPet);
-      const baseReward = timer?.wasPaused ? 10 : 15; // Reduced reward if paused
       const trustPenalty = timer?.wasPaused ? 5 : 0;
       
-      pet.happiness = Math.min(100, pet.happiness + baseReward);
       pet.trust = Math.max(0, (pet.trust || 100) - trustPenalty);
       pet.streak += 1;
       localStorage.setItem("kiki-pet", JSON.stringify(pet));
     }
 
     const message = timer?.wasPaused 
-      ? "Task completed, but Kiki noticed the pause... +10 happiness, -5 trust"
-      : "Task completed! 🎉 Kiki is so proud of you! +15 happiness points!";
+      ? "Task completed, but Kiki noticed the pause... Trust damaged"
+      : "Task completed! 🎉 Kiki is so proud of you!";
 
     toast({
       title: timer?.wasPaused ? "Task completed... barely" : "Task completed! 🎉",
