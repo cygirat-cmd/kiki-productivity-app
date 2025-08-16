@@ -2,41 +2,66 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Kiki App Design System - Kawaii meets Dark Humor */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Kawaii Base Colors */
+    --background: 320 45% 97%;
+    --foreground: 300 15% 15%;
 
+    /* Card System */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 300 15% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 300 15% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Kawaii Primary - Soft Pink */
+    --primary: 325 65% 75%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 325 85% 85%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Kawaii Secondary - Lavender */
+    --secondary: 270 60% 85%;
+    --secondary-foreground: 270 30% 25%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted Kawaii Tones */
+    --muted: 300 25% 92%;
+    --muted-foreground: 300 15% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent - Mint Green */
+    --accent: 150 50% 80%;
+    --accent-foreground: 150 30% 25%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Death/Failure - Dramatic Red */
+    --destructive: 0 75% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --death-black: 0 0% 8%;
+    --death-red: 0 85% 50%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Success - Happy Green */
+    --success: 140 60% 70%;
+    --success-foreground: 140 30% 20%;
 
-    --radius: 0.5rem;
+    /* Warning - Soft Orange */
+    --warning: 35 85% 75%;
+    --warning-foreground: 35 35% 25%;
+
+    /* Kawaii Gradients */
+    --gradient-kawaii: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    --gradient-dreamy: linear-gradient(180deg, hsl(var(--secondary)), hsl(var(--accent)));
+    --gradient-death: linear-gradient(180deg, hsl(var(--death-red)), hsl(var(--death-black)));
+
+    /* Shadows */
+    --shadow-kawaii: 0 8px 25px -8px hsl(var(--primary) / 0.3);
+    --shadow-death: 0 8px 25px -8px hsl(var(--death-red) / 0.5);
+
+    --border: 300 25% 88%;
+    --input: 300 25% 90%;
+    --ring: 325 65% 75%;
+
+    --radius: 1rem;
 
     --sidebar-background: 0 0% 98%;
 
@@ -100,6 +125,88 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+  }
+}
+
+@layer components {
+  /* Kawaii Animations */
+  .bounce-cute {
+    animation: bounce-cute 2s infinite;
+  }
+  
+  .shake-death {
+    animation: shake-death 0.5s ease-in-out;
+  }
+  
+  .fade-to-black {
+    animation: fade-to-black 1s ease-in forwards;
+  }
+  
+  /* Kawaii Button Variants */
+  .btn-kawaii {
+    @apply bg-gradient-to-r from-primary to-primary-glow text-primary-foreground rounded-full px-6 py-3 font-semibold shadow-[var(--shadow-kawaii)] transform transition-all duration-200 hover:scale-105 active:scale-95;
+  }
+  
+  .btn-death {
+    @apply bg-gradient-to-r from-death-red to-death-black text-white rounded-full px-6 py-3 font-bold shadow-[var(--shadow-death)] transform transition-all duration-200 hover:scale-105 active:scale-95;
+  }
+  
+  .btn-success {
+    @apply bg-success text-success-foreground rounded-full px-6 py-3 font-semibold transform transition-all duration-200 hover:scale-105 active:scale-95;
+  }
+  
+  /* Card Variants */
+  .card-kawaii {
+    @apply bg-gradient-to-br from-card via-muted to-secondary/30 rounded-2xl p-6 shadow-[var(--shadow-kawaii)] border border-border/50;
+  }
+  
+  .card-death {
+    @apply bg-gradient-to-br from-death-black to-death-red/20 rounded-2xl p-6 shadow-[var(--shadow-death)] border border-death-red/30;
+  }
+  
+  /* Task Status Colors */
+  .status-todo {
+    @apply bg-muted text-muted-foreground;
+  }
+  
+  .status-doing {
+    @apply bg-warning text-warning-foreground;
+  }
+  
+  .status-done {
+    @apply bg-success text-success-foreground;
+  }
+}
+
+@keyframes bounce-cute {
+  0%, 20%, 53%, 80%, 100% {
+    transform: translate3d(0,0,0);
+  }
+  40%, 43% {
+    transform: translate3d(0, -8px, 0);
+  }
+  70% {
+    transform: translate3d(0, -4px, 0);
+  }
+  90% {
+    transform: translate3d(0, -2px, 0);
+  }
+}
+
+@keyframes shake-death {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-3px); }
+  20%, 40%, 60%, 80% { transform: translateX(3px); }
+}
+
+@keyframes fade-to-black {
+  0% { 
+    background-color: transparent;
+    opacity: 1;
+  }
+  100% { 
+    background-color: hsl(var(--death-black));
+    opacity: 0.95;
   }
 }
