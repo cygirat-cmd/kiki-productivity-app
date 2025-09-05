@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { usePetStore, useTimerStore } from '@/store';
 import type { Pet } from '@/store';
 import { isValidUuid, generateValidUuid } from '@/utils/uuidFixer';
+import { logger } from '@/utils/logger';
 
 /**
  * Wait for a valid Supabase session with retry logic
@@ -11,7 +12,7 @@ async function waitForValidSession(maxRetries = 3, delayMs = 1000) {
     const { data: { session }, error } = await supabase.auth.getSession();
     
     // Debug: log full session structure
-    console.log(`🔍 Session debug attempt ${attempt}:`, { 
+    logger.debug(`🔍 Session debug attempt ${attempt}:`, { 
       session: session, 
       user: session?.user,
       sessionKeys: session ? Object.keys(session) : 'no session',
@@ -19,11 +20,11 @@ async function waitForValidSession(maxRetries = 3, delayMs = 1000) {
     });
     
     if (!error && session?.user) {
-      console.log(`✅ Valid session found on attempt ${attempt}`);
+      logger.debug(`✅ Valid session found on attempt ${attempt}`);
       return { session, error: null };
     }
     
-    console.log(`⏳ Session not ready on attempt ${attempt}/${maxRetries}:`, { 
+    logger.debug(`⏳ Session not ready on attempt ${attempt}/${maxRetries}:`, { 
       hasSession: !!session, 
       hasUser: !!session?.user, 
       error: error?.message 
@@ -54,8 +55,8 @@ export interface SyncData {
     pauseTokens: number;
     insurance: boolean;
   };
-  equippedItems: Record<number, any>;
-  familyTree?: any[];
+  equippedItems: Record<number, unknown>;
+  familyTree?: unknown[];
 }
 
 export interface SyncResult {
@@ -71,10 +72,10 @@ export interface SyncResult {
 export async function uploadKikiToCloud(): Promise<SyncResult> {
   try {
     // Wait for valid session with retry logic
-    console.log('🔄 Waiting for valid session before upload...');
+    logger.debug('🔄 Waiting for valid session before upload...');
     const { session, error: sessionError } = await waitForValidSession();
     if (sessionError || !session?.user) {
-      console.error('Upload session check failed after retries:', { sessionError, hasUser: !!session?.user });
+      logger.error('Upload session check failed after retries:', { sessionError, hasUser: !!session?.user });
       return { success: false, error: 'Not authenticated' };
     }
 
@@ -90,7 +91,7 @@ export async function uploadKikiToCloud(): Promise<SyncResult> {
     // Fix pet ID if it's invalid UUID format
     let petId = pet.id;
     if (petId && !isValidUuid(petId)) {
-      console.log(`Invalid pet ID detected: ${petId}, generating new UUID`);
+      logger.debug(`Invalid pet ID detected: ${petId}, generating new UUID`);
       petId = generateValidUuid();
       // Update the pet store with the new valid ID
       petState.updatePet({ id: petId });
@@ -127,7 +128,7 @@ export async function uploadKikiToCloud(): Promise<SyncResult> {
     // Prepare equipped items
     const equippedData = petState.equippedItems;
 
-    console.log('🔄 Uploading Kiki to cloud:', {
+    logger.debug('🔄 Uploading Kiki to cloud:', {
       petName: pet.name,
       petId: pet.id,
       coins: petState.coins,
@@ -145,7 +146,7 @@ export async function uploadKikiToCloud(): Promise<SyncResult> {
     });
 
     if (error) {
-      console.error('Failed to sync pet to cloud:', error);
+      logger.error('Failed to sync pet to cloud:', error);
       return { success: false, error: error.message };
     }
 
@@ -154,13 +155,13 @@ export async function uploadKikiToCloud(): Promise<SyncResult> {
       petState.updatePet({ id: data.pet_id });
     }
 
-    console.log('✅ Pet synced to cloud successfully:', data);
+    logger.info('✅ Pet synced to cloud successfully:', data);
     
     // Log debug information if available
     if (data?.debug) {
-      console.log('🐛 Sync debug information:');
-      data.debug.forEach((step: any, index: number) => {
-        console.log(`   ${index + 1}. ${step.step}:`, step);
+      logger.debug('🐛 Sync debug information:');
+      data.debug.forEach((step: Record<string, unknown>, index: number) => {
+        logger.debug(`   ${index + 1}. ${step.step}:`, step);
       });
     }
 
@@ -170,9 +171,10 @@ export async function uploadKikiToCloud(): Promise<SyncResult> {
       pet_id: data.pet_id
     };
 
-  } catch (error: any) {
-    console.error('Sync upload error:', error);
-    return { success: false, error: error.message || 'Unknown error' };
+  } catch (error: unknown) {
+    logger.error('Sync upload error:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: message };
   }
 }
 
@@ -182,26 +184,26 @@ export async function uploadKikiToCloud(): Promise<SyncResult> {
 export async function downloadKikiFromCloud(): Promise<SyncResult & { data?: SyncData }> {
   try {
     // Wait for valid session with retry logic
-    console.log('🔄 Waiting for valid session before download...');
+    logger.debug('🔄 Waiting for valid session before download...');
     const { session, error: sessionError } = await waitForValidSession();
     if (sessionError || !session?.user) {
-      console.error('Download session check failed after retries:', { sessionError, hasUser: !!session?.user });
+      logger.error('Download session check failed after retries:', { sessionError, hasUser: !!session?.user });
       return { success: false, error: 'Not authenticated' };
     }
 
-    console.log('🔽 Downloading Kiki from cloud...');
+    logger.debug('🔽 Downloading Kiki from cloud...');
 
     // Call RPC to get data
     const { data, error } = await supabase.rpc('get_user_kiki_data');
 
-    console.log('🔍 Raw RPC response:', { data, error, hasData: !!data, dataType: typeof data });
+    logger.debug('🔍 Raw RPC response:', { data, error, hasData: !!data, dataType: typeof data });
 
     if (error) {
-      console.error('Failed to download kiki from cloud:', error);
+      logger.error('Failed to download kiki from cloud:', error);
       return { success: false, error: error.message };
     }
 
-    console.log('🔍 Data structure check:', {
+    logger.debug('🔍 Data structure check:', {
       hasData: !!data,
       dataSuccess: data?.success,
       dataError: data?.error,
@@ -211,11 +213,11 @@ export async function downloadKikiFromCloud(): Promise<SyncResult & { data?: Syn
     });
 
     if (!data?.success) {
-      console.log('❌ Download failed - data not successful:', data);
+      logger.debug('❌ Download failed - data not successful:', data);
       return { success: false, error: data?.error || 'No data returned' };
     }
 
-    console.log('📥 Kiki data received from cloud:', {
+    logger.debug('📥 Kiki data received from cloud:', {
       hasPet: !!data.pet,
       petName: data.pet?.name,
       coins: data.stats?.coins,
@@ -273,7 +275,7 @@ export async function downloadKikiFromCloud(): Promise<SyncResult & { data?: Syn
       });
     }
 
-    console.log('✅ Kiki data applied to local stores');
+    logger.info('✅ Kiki data applied to local stores');
 
     return {
       success: true,
@@ -286,9 +288,10 @@ export async function downloadKikiFromCloud(): Promise<SyncResult & { data?: Syn
       }
     };
 
-  } catch (error: any) {
-    console.error('Sync download error:', error);
-    return { success: false, error: error.message || 'Unknown error' };
+  } catch (error: unknown) {
+    logger.error('Sync download error:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: message };
   }
 }
 
@@ -303,7 +306,7 @@ export async function addPetToFamilyTree(
   try {
     const { data: session } = await supabase.auth.getSession();
     if (!session?.session?.user) {
-      console.warn('Not authenticated - cannot add to family tree');
+      logger.warn('Not authenticated - cannot add to family tree');
       return false;
     }
 
@@ -321,7 +324,7 @@ export async function addPetToFamilyTree(
         .eq('user_id', session.session.user.id);
 
       if (updateError) {
-        console.error('Failed to update dead pet:', updateError);
+        logger.error('Failed to update dead pet:', updateError);
       }
     }
 
@@ -339,15 +342,15 @@ export async function addPetToFamilyTree(
       });
 
     if (treeError) {
-      console.error('Failed to add to family tree:', treeError);
+      logger.error('Failed to add to family tree:', treeError);
       return false;
     }
 
-    console.log('✅ Pet added to family tree:', deadPet.name);
+    logger.info('✅ Pet added to family tree:', deadPet.name);
     return true;
 
   } catch (error) {
-    console.error('Error adding pet to family tree:', error);
+    logger.error('Error adding pet to family tree:', error);
     return false;
   }
 }

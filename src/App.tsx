@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/components/AuthProvider";
 import { Suspense, lazy } from "react";
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Critical pages loaded immediately (first load)
 import Index from "./pages/Index";
@@ -55,7 +56,8 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Suspense fallback={<PageLoader />}>
+          <ErrorBoundary>
+            <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/welcome" element={<Welcome />} />
@@ -78,6 +80,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          </ErrorBoundary>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
