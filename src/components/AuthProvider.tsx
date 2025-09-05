@@ -157,7 +157,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setLoading(false);
           
           // Update user items store on auth changes
-          if (session?.user && event === 'SIGNED_IN') {
+          if (session?.user && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
             // Download existing Kiki data from cloud first
             try {
               console.log('🔽 Downloading existing Kiki data from cloud...');
