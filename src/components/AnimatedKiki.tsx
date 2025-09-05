@@ -64,7 +64,7 @@ function worldMatrix(layer:any, scope:any, frame:number, dampRotation:boolean = 
 // helpers
 const clamp = (v:number, lo:number, hi:number)=> Math.max(lo, Math.min(hi, v));
 const shortest = (a:number)=> { // map do (-180,180]
-  let x = ((a + 180) % 360 + 360) % 360 - 180;
+  const x = ((a + 180) % 360 + 360) % 360 - 180;
   return x;
 };
 

@@ -3,6 +3,7 @@ import { usePetStore, useTimerStore } from '@/store';
 import type { Pet } from '@/store';
 import { isValidUuid, generateValidUuid } from '@/utils/uuidFixer';
 import { logger } from '@/utils/logger';
+import { setLastCloudSyncToStorage } from '@/utils/helpers';
 
 /**
  * Wait for a valid Supabase session with retry logic
@@ -156,7 +157,11 @@ export async function uploadKikiToCloud(): Promise<SyncResult> {
     }
 
     logger.info('✅ Pet synced to cloud successfully:', data);
-    
+
+    // Persist last sync time
+    const syncTime = data?.synced_at || new Date().toISOString();
+    setLastCloudSyncToStorage(syncTime);
+
     // Log debug information if available
     if (data?.debug) {
       logger.debug('🐛 Sync debug information:');
@@ -167,7 +172,7 @@ export async function uploadKikiToCloud(): Promise<SyncResult> {
 
     return {
       success: true,
-      synced_at: data.synced_at,
+      synced_at: syncTime,
       pet_id: data.pet_id
     };
 
@@ -277,9 +282,13 @@ export async function downloadKikiFromCloud(): Promise<SyncResult & { data?: Syn
 
     logger.info('✅ Kiki data applied to local stores');
 
+    // Persist last sync time
+    const syncTime = data.synced_at || new Date().toISOString();
+    setLastCloudSyncToStorage(syncTime);
+
     return {
       success: true,
-      synced_at: data.synced_at,
+      synced_at: syncTime,
       data: {
         pet: data.pet,
         stats: data.stats,
