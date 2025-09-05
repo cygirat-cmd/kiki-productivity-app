@@ -1,0 +1,5 @@
+[functions.review-image]
+verify_jwt = false
+
+[functions.cleanup-expired-verifications]
+verify_jwt = false

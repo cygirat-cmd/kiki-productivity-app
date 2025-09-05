@@ -1,0 +1,4 @@
+{
+  "tasks": { "dev": "deno run -A --watch=static/,./ index.ts" },
+  "deploy": { "project": "supabase" }
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Kiki or Bust</string>
+    <string name="title_activity_main">Kiki or Bust</string>
+    <string name="package_name">com.kiki.productivity</string>
+    <string name="custom_url_scheme">com.kiki.productivity</string>
+</resources>

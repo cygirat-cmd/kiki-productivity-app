@@ -1,0 +1,316 @@
+/**
+ * Optimized CSS - Better performance through smart animations and reduced repaints
+ * Uses CSS containment, will-change, and hardware acceleration wisely
+ */
+
+/* Performance-optimized animations with containment */
+@layer components {
+  /* Optimized bounce animation with hardware acceleration */
+  .bounce-cute-optimized {
+    animation: bounce-cute-optimized 2s infinite;
+    /* Use CSS containment to limit layout calculations */
+    contain: layout style;
+    /* will-change applied via JS when needed */
+  }
+  
+  /* Hardware-accelerated shimmer for loading states */
+  .shimmer-loading {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--muted-foreground) / 0.1) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    contain: layout;
+    /* will-change applied via JS when needed */
+  }
+  
+  /* Optimized fade transitions */
+  .fade-optimized {
+    transition: opacity 200ms ease-out;
+    contain: layout;
+  }
+  
+  /* Performance-optimized cards with efficient shadows */
+  .card-kawaii-optimized {
+    background: hsl(var(--card));
+    border-radius: 1rem;
+    padding: 1.5rem;
+    border: 1px solid hsl(var(--border) / 0.5);
+    /* Use efficient box-shadow instead of filter drop-shadow */
+    box-shadow: 
+      0 4px 6px -1px hsl(var(--primary) / 0.1),
+      0 2px 4px -1px hsl(var(--primary) / 0.06);
+    /* Prevent layout thrashing */
+    contain: layout style;
+    /* Only transform during hover */
+    transition: transform 150ms ease-out;
+  }
+  
+  .card-kawaii-optimized:hover {
+    transform: translateY(-2px);
+    /* will-change managed via JS for better performance */
+  }
+  
+  /* Optimized button animations */
+  .btn-kawaii-optimized {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    color: hsl(var(--primary-foreground));
+    border-radius: 9999px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    /* Contain layout calculations */
+    contain: layout;
+    /* Efficient transitions */
+    transition: 
+      transform 100ms ease-out,
+      box-shadow 100ms ease-out;
+  }
+  
+  .btn-kawaii-optimized::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 300ms ease-out;
+  }
+  
+  .btn-kawaii-optimized:hover::before {
+    left: 100%;
+  }
+  
+  .btn-kawaii-optimized:active {
+    transform: scale(0.98);
+  }
+  
+  /* Optimized progress indicators */
+  .progress-optimized {
+    background: hsl(var(--muted));
+    height: 0.5rem;
+    border-radius: 9999px;
+    overflow: hidden;
+    position: relative;
+    contain: layout;
+  }
+  
+  .progress-optimized::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    border-radius: inherit;
+    transition: width 200ms ease-out;
+    /* will-change applied dynamically when progress changes */
+  }
+  
+  /* Efficient grid layouts */
+  .grid-optimized {
+    display: grid;
+    gap: 1rem;
+    /* Use subgrid when supported for better performance */
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    contain: layout;
+  }
+  
+  /* Optimized image containers */
+  .image-container-optimized {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.5rem;
+    /* Prevent layout shifts */
+    aspect-ratio: 1;
+    contain: layout size;
+  }
+  
+  .image-container-optimized img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Efficient transitions */
+    transition: transform 200ms ease-out;
+    /* will-change applied on hover via JS */
+  }
+  
+  .image-container-optimized:hover img {
+    transform: scale(1.05);
+  }
+  
+  /* Optimized list items */
+  .list-item-optimized {
+    padding: 1rem;
+    border-radius: 0.5rem;
+    transition: background-color 150ms ease-out;
+    contain: layout style;
+  }
+  
+  .list-item-optimized:hover {
+    background-color: hsl(var(--muted) / 0.5);
+  }
+  
+  /* Virtual scrolling container */
+  .virtual-scroll-optimized {
+    height: 400px;
+    overflow-y: auto;
+    /* Smooth scrolling */
+    scroll-behavior: smooth;
+    /* Contain layout for better performance */
+    contain: layout;
+    /* will-change applied during scroll via JS */
+  }
+  
+  /* Optimized modal backdrop */
+  .modal-backdrop-optimized {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    /* Use layer to create stacking context */
+    z-index: 50;
+    /* Contain painting for performance */
+    contain: layout paint;
+  }
+  
+  /* Efficient skeleton loader */
+  .skeleton-optimized {
+    background: hsl(var(--muted));
+    border-radius: 0.25rem;
+    position: relative;
+    overflow: hidden;
+    contain: layout;
+  }
+  
+  .skeleton-optimized::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsl(var(--muted-foreground) / 0.1),
+      transparent
+    );
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+  }
+}
+
+/* Optimized keyframes with efficient transforms */
+@keyframes bounce-cute-optimized {
+  0%, 20%, 53%, 80%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  40%, 43% {
+    transform: translate3d(0, -8px, 0);
+  }
+  70% {
+    transform: translate3d(0, -4px, 0);
+  }
+  90% {
+    transform: translate3d(0, -2px, 0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes skeleton-loading {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Performance utilities */
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000;
+}
+
+/* Safe animation class without will-change to prevent memory budget exceeded warnings */
+.safe-transform {
+  transform: translateZ(0);
+  /* Use JS to manage will-change dynamically */
+}
+
+.safe-transition {
+  transition: transform 200ms ease-out, opacity 200ms ease-out;
+  /* Avoid permanent will-change declarations */
+}
+
+.smooth-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.no-scroll {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* Optimized focus states */
+.focus-optimized:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+  transition: outline-offset 100ms ease-out;
+}
+
+/* Media queries for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .bounce-cute-optimized,
+  .shimmer-loading,
+  .skeleton-optimized::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+  
+  * {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .card-kawaii-optimized {
+    border: 2px solid currentColor;
+  }
+  
+  .btn-kawaii-optimized {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Optimized print styles */
+@media print {
+  .bounce-cute-optimized,
+  .shimmer-loading,
+  .modal-backdrop-optimized {
+    display: none !important;
+  }
+  
+  .card-kawaii-optimized {
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+}

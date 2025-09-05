@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Skull, Flower } from "lucide-react";
+import { usePetStore } from '@/store';
 
 interface DeadPet {
   type: string;
@@ -16,11 +17,13 @@ interface DeadPet {
 }
 
 const Cemetery = () => {
+  const { pet } = usePetStore();
   const [deadPets, setDeadPets] = useState<DeadPet[]>([]);
   const [selectedGrave, setSelectedGrave] = useState<DeadPet | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Load cemetery from localStorage (could be moved to store later)
     const cemetery = JSON.parse(localStorage.getItem("kiki-cemetery") || "[]");
     setDeadPets(cemetery);
   }, []);
@@ -45,17 +48,29 @@ const Cemetery = () => {
     setSelectedGrave(null);
   };
 
+  const adoptNewPet = () => {
+    // Navigate to onboarding to name new companion
+    navigate("/onboarding");
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-muted via-background to-secondary/20">
       {/* Header */}
       <div className="bg-card/50 backdrop-blur-sm border-b p-4">
         <div className="max-w-4xl mx-auto flex items-center space-x-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/home")}>
+          <Button variant="ghost" size="icon" onClick={() => {
+            // Check if user has a living pet before going to home
+            if (pet) {
+              navigate("/home");
+            } else {
+              navigate("/onboarding");
+            }
+          }}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex items-center space-x-2">
             <Skull className="w-6 h-6" />
-            <h1 className="text-xl font-bold">Pet Cemetery</h1>
+            <h1 className="text-xl font-bold">Companion Cemetery</h1>
           </div>
         </div>
       </div>
@@ -65,13 +80,20 @@ const Cemetery = () => {
           <div className="text-center py-16 space-y-6">
             <div className="text-6xl opacity-50">🌱</div>
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold">No Fallen Pets Yet</h2>
+              <h2 className="text-2xl font-bold">No Fallen Companions Yet</h2>
               <p className="text-muted-foreground">
-                Your current pet is still alive! Keep completing tasks to maintain their happiness.
+                Your current companion is still alive! Keep completing tasks to maintain their happiness.
               </p>
             </div>
-            <Button onClick={() => navigate("/home")} className="btn-kawaii">
-              Return to Your Living Pet
+            <Button onClick={() => {
+              // Check if user actually has a living pet
+              if (pet) {
+                navigate("/home");
+              } else {
+                navigate("/onboarding");
+              }
+            }} className="btn-kawaii">
+              {pet ? "Return to Your Living Companion" : "Adopt New Companion"}
             </Button>
           </div>
         ) : (
@@ -82,7 +104,7 @@ const Cemetery = () => {
                 Remember those who perished due to your... productivity challenges.
               </p>
               <Badge variant="destructive" className="text-lg px-4 py-1">
-                {deadPets.length} pets lost
+                {deadPets.length} companions lost
               </Badge>
             </div>
 
@@ -98,7 +120,6 @@ const Cemetery = () => {
                     
                     <div className="space-y-2">
                       <h3 className="text-xl font-bold text-white">{pet.name}</h3>
-                      <p className="text-sm text-white/80 capitalize">{pet.type}</p>
                       
                       <div className="space-y-1 text-xs text-white/60">
                         <p>Born: {formatDate(pet.adoptedAt)}</p>
@@ -118,7 +139,7 @@ const Cemetery = () => {
               ))}
             </div>
 
-            <div className="text-center py-8">
+            <div className="text-center py-8 space-y-6">
               <div className="bg-muted/50 rounded-lg p-6 max-w-md mx-auto">
                 <p className="text-sm italic text-muted-foreground">
                   "Each gravestone represents a failure... but also a lesson. 
@@ -128,6 +149,26 @@ const Cemetery = () => {
                   - The Kiki Memorial Foundation
                 </p>
               </div>
+              
+              {!pet && (
+                <div className="space-y-3">
+                  <Button onClick={adoptNewPet} className="btn-kawaii">
+                    ✨ Adopt New Companion
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Honor the fallen by giving another companion a chance at life
+                  </p>
+                </div>
+              )}
+              
+              {pet && (
+                <div className="bg-success/20 rounded-lg p-4 max-w-md mx-auto">
+                  <p className="text-sm text-success-foreground text-center">
+                    💚 Your current Kiki is still alive! <br/>
+                    Take care of them so they don't end up here...
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -142,7 +183,6 @@ const Cemetery = () => {
               
               <div className="space-y-2">
                 <h2 className="text-2xl font-bold text-white">{selectedGrave.name}</h2>
-                <p className="text-white/80 capitalize">{selectedGrave.type}</p>
                 
                 <div className="bg-death-red/30 rounded-lg p-4 text-white">
                   <p className="whitespace-pre-line text-sm">
