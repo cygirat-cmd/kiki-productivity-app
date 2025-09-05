@@ -4,6 +4,8 @@
  */
 
 import { enhancedSupabase } from '../lib/supabaseClient';
+import { logger } from '@/utils/logger';
+import { fetchWithTimeout } from '@/utils/fetchWithTimeout';
 import { CACHE_DURATIONS, API_CONFIG, FILE_SIZE_LIMITS, AI_THRESHOLDS } from '../constants';
 
 // Types for AI scoring (no sensitive data in frontend)
@@ -109,13 +111,13 @@ export async function scoreProofWithAI({
   // Check cache first
   const cached = aiCache.get(imageBuffer, taskDescription);
   if (cached) {
-    console.log('AI score cache hit');
+    logger.debug('AI score cache hit');
     return cached;
   }
 
   try {
     // Convert ArrayBuffer to base64 for Edge Function
-    const base64 = arrayBufferToBase64(imageBuffer);
+    const base64 = await arrayBufferToBase64(imageBuffer);
     
     // Call secure Edge Function instead of direct AI API
     const { data: session } = await enhancedSupabase.getCurrentUser();
@@ -123,7 +125,7 @@ export async function scoreProofWithAI({
       throw new Error('User must be authenticated for AI scoring');
     }
 
-    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-score-proof`, {
+    const response = await fetchWithTimeout(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-score-proof`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -153,13 +155,13 @@ export async function scoreProofWithAI({
     // Cache successful result
     aiCache.set(imageBuffer, taskDescription, result);
     
-    console.log(`AI scoring completed in ${result.processingTimeMs}ms, score: ${result.score}`);
+    logger.debug(`AI scoring completed in ${result.processingTimeMs}ms, score: ${result.score}`);
     
     return result;
     
   } catch (error) {
     const processingTimeMs = Date.now() - startTime;
-    console.error('AI scoring failed:', error);
+    logger.error('AI scoring failed:', error);
     
     // Return fallback result to avoid breaking the flow
     const fallbackResult: AIScoreResult = {
@@ -197,7 +199,7 @@ export async function batchScoreProofs(
     if (result.status === 'fulfilled') {
       return result.value;
     } else {
-      console.error(`Batch AI scoring failed for request ${index}:`, result.reason);
+      logger.error(`Batch AI scoring failed for request ${index}:`, result.reason);
       return {
         score: 0.5,
         reasoning: `Batch processing failed: ${result.reason}`,
@@ -219,7 +221,7 @@ export async function getAIServiceStats(): Promise<{
 }> {
   try {
     // Test AI service availability with a minimal request
-    const testResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-health`, {
+    const testResponse = await fetchWithTimeout(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-health`, {
       method: 'GET'
     });
     
@@ -242,7 +244,7 @@ export async function getAIServiceStats(): Promise<{
  */
 export function clearAICache(): void {
   aiCache.clear();
-  console.log('AI cache cleared');
+  logger.debug('AI cache cleared');
 }
 
 /**
@@ -250,25 +252,32 @@ export function clearAICache(): void {
  */
 export async function warmupAIService(): Promise<boolean> {
   try {
-    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-warmup`, {
+    const response = await fetchWithTimeout(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-warmup`, {
       method: 'POST'
     });
     
     return response.ok;
   } catch (error) {
-    console.warn('AI service warmup failed:', error);
+    logger.warn('AI service warmup failed:', error);
     return false;
   }
 }
 
 // Utility functions
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
+export async function arrayBufferToBase64(buffer: ArrayBuffer): Promise<string> {
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(buffer).toString('base64');
   }
-  return btoa(binary);
+  return await new Promise((resolve, reject) => {
+    const blob = new Blob([buffer]);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      resolve(dataUrl.split(',')[1]);
+    };
+    reader.onerror = () => reject(new Error('FileReader failed'));
+    reader.readAsDataURL(blob);
+  });
 }
 
 /**
